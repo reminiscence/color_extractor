@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import {
   Button,
   ColorInput,
   ColorPicker,
   Divider,
   Group,
+  Input,
   Select,
   rem,
   Grid,
@@ -14,21 +16,25 @@ import {
 import useColor from './hooks/useColor';
 import useColorFormat from './hooks/useColorFormat';
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks';
+import { CLEAR_COLOR, COLOR_FORMAT, NICK_NAME_DESC, NICK_NAME_LABEL, NICK_PLACEHOLDER } from '../../common/Constants';
 
 const MainPage = () => {
   const { colorScheme } = useMantineColorScheme();
   const { color, changeColor } = useColor({ initColor: '#ffffff' });
-  const { format, changeFormat } = useColorFormat({ initFormat: 'hex' });
+  const { format, changeFormat } = useColorFormat({ initFormat: COLOR_FORMAT.HEX });
   const THEME_KEY = 'select_color';
-  const [selectedColorList, setSelectedColorList] = useLocalStorage<string[]>({
+  const [selectedColorList, setSelectedColorList] = useLocalStorage<{ title: string; color: string }[]>({
     key: THEME_KEY,
     defaultValue: [],
     getInitialValueInEffect: true,
   });
-  const matches = useMediaQuery('(max-width: 43rem)');
+  const [nickInput, setNickInput] = useState<string>('');
+  const matches = useMediaQuery('(max-width: 56rem)');
 
   const handleSelectColor = () => {
-    setSelectedColorList(prevState => [...prevState, color]);
+    const title = nickInput || color;
+    setSelectedColorList(prevState => [...prevState, { title, color }]);
+    setNickInput('');
   };
 
   const handleClearColor = () => {
@@ -67,16 +73,28 @@ const MainPage = () => {
               defaultValue={format}
               label={'컬러 포맷'}
               data={[
-                { value: 'hex', label: 'HEX' },
-                { value: 'hexa', label: 'HEXA' },
-                { value: 'rgb', label: 'RGB' },
-                { value: 'rgba', label: 'RGBA' },
-                { value: 'hsl', label: 'HSL' },
-                { value: 'hsla', label: 'HSLA' },
+                { value: COLOR_FORMAT.HEX, label: COLOR_FORMAT.HEX.toUpperCase() },
+                { value: COLOR_FORMAT.HEXA, label: COLOR_FORMAT.HEXA.toUpperCase() },
+                { value: COLOR_FORMAT.RGB, label: COLOR_FORMAT.RGB.toUpperCase() },
+                { value: COLOR_FORMAT.RGBA, label: COLOR_FORMAT.RGBA.toUpperCase() },
+                { value: COLOR_FORMAT.HSL, label: COLOR_FORMAT.HSL.toUpperCase() },
+                { value: COLOR_FORMAT.HSLA, label: COLOR_FORMAT.HSLA.toUpperCase() },
               ]}
               value={format}
               onChange={changeFormat}
             />
+            <Input.Wrapper
+              id="input-nick"
+              label={NICK_NAME_LABEL}
+              description={NICK_NAME_DESC}
+              style={{ marginTop: 16 }}>
+              <Input
+                id="input-nick"
+                placeholder={NICK_PLACEHOLDER}
+                value={nickInput}
+                onChange={e => setNickInput(e.target.value)}
+              />
+            </Input.Wrapper>
             <Button onClick={handleSelectColor} style={{ marginTop: 8, marginRight: 8 }}>
               {'컬러 선택'}
             </Button>
@@ -89,50 +107,52 @@ const MainPage = () => {
           </Title>
           <Grid columns={16} style={{ maxWidth: 675, minHeight: 50 }}>
             {selectedColorList.map((item, idx) => {
+              const { title, color } = item;
+
               return (
-                <Tooltip key={`selected_color_${idx}`} label={item}>
+                <Tooltip key={`selected_color_${idx}`} label={title}>
                   <Grid.Col
                     span={1}
                     style={{
                       border: `1px solid ${colorScheme === 'dark' ? '#ffffff' : '#1d1d1f'}`,
-                      backgroundColor: item,
+                      backgroundColor: color,
                       height: 10,
                       margin: 4,
                       cursor: 'pointer',
                     }}
                     onClick={() => {
-                      if (item.includes('#')) {
-                        if (item.length === 9) {
-                          changeFormat('hexa');
+                      if (color.includes('#')) {
+                        if (color.length === 9) {
+                          changeFormat(COLOR_FORMAT.HEXA);
                         } else {
-                          changeFormat('hex');
+                          changeFormat(COLOR_FORMAT.HEX);
                         }
 
-                        changeColor(item);
+                        changeColor(color);
 
                         return;
                       }
 
-                      if (item.includes('rgb')) {
-                        if (item.includes('rgba')) {
-                          changeFormat('rgba');
+                      if (color.includes(COLOR_FORMAT.RGB)) {
+                        if (color.includes(COLOR_FORMAT.RGBA)) {
+                          changeFormat(COLOR_FORMAT.RGBA);
                         } else {
-                          changeFormat('rgb');
+                          changeFormat(COLOR_FORMAT.RGB);
                         }
 
-                        changeColor(item);
+                        changeColor(color);
 
                         return;
                       }
 
-                      if (item.includes('hsl')) {
-                        if (item.includes('hsla')) {
-                          changeFormat('hsla');
+                      if (color.includes(COLOR_FORMAT.HSL)) {
+                        if (color.includes(COLOR_FORMAT.HSLA)) {
+                          changeFormat(COLOR_FORMAT.HSLA);
                         } else {
-                          changeFormat('hsl');
+                          changeFormat(COLOR_FORMAT.HSL);
                         }
 
-                        changeColor(item);
+                        changeColor(color);
 
                         return;
                       }
@@ -142,9 +162,11 @@ const MainPage = () => {
               );
             })}
           </Grid>
-          <Button onClick={handleClearColor} variant={'outline'} style={{ marginTop: 32 }}>
-            {'clear color'}
-          </Button>
+          {selectedColorList.length > 0 ? (
+            <Button onClick={handleClearColor} variant={'outline'} style={{ marginTop: 32 }}>
+              {CLEAR_COLOR}
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>
