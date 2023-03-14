@@ -17,29 +17,47 @@ import useColor from './hooks/useColor';
 import useColorFormat from './hooks/useColorFormat';
 import { useLocalStorage, useMediaQuery } from '@mantine/hooks';
 import { CLEAR_COLOR, COLOR_FORMAT, NICK_NAME_DESC, NICK_NAME_LABEL, NICK_PLACEHOLDER } from '../../common/Constants';
+import dayjs from 'dayjs';
 
 const MainPage = () => {
   const { colorScheme } = useMantineColorScheme();
   const { color, changeColor } = useColor({ initColor: '#ffffff' });
   const { format, changeFormat } = useColorFormat({ initFormat: COLOR_FORMAT.HEX });
-  const THEME_KEY = 'select_color';
-  const [selectedColorList, setSelectedColorList] = useLocalStorage<{ title: string; color: string }[]>({
-    key: THEME_KEY,
-    defaultValue: [],
+  const COLOR_KEY = 'select_color_obj';
+  const [selectedColorObj, setSelectedColorObj] = useLocalStorage<{
+    [index: string]: { title: string; color: string }[];
+  }>({
+    key: COLOR_KEY,
+    defaultValue: {},
     getInitialValueInEffect: true,
   });
   const [nickInput, setNickInput] = useState<string>('');
   const matches = useMediaQuery('(max-width: 56rem)');
 
   const handleSelectColor = () => {
-    const title = nickInput || color;
-    setSelectedColorList(prevState => [...prevState, { title, color }]);
+    const title = nickInput || '';
+    const currentDateKey = dayjs(new Date()).format('YYYY-MM-DD');
+
+    setSelectedColorObj(prevState => ({
+      ...prevState,
+      [currentDateKey]:
+        prevState[currentDateKey] != null ? [...prevState[currentDateKey], { title, color }] : [{ title, color }],
+    }));
     setNickInput('');
   };
 
-  const handleClearColor = () => {
-    setSelectedColorList([]);
+  const handleClearColor = (date: string) => {
+    const fileterdColorObjKeyList = Object.keys(selectedColorObj).filter(key => key !== date);
+    const filteredColorObj: { [index: string]: { title: string; color: string }[] } = {};
+
+    fileterdColorObjKeyList.forEach(key => {
+      filteredColorObj[key] = selectedColorObj[key];
+    });
+
+    setSelectedColorObj(filteredColorObj);
   };
+
+  const selectedColorObjKeyList = Object.keys(selectedColorObj).sort((a, b) => (a > b ? 0 : 1));
 
   return (
     <div
@@ -105,68 +123,90 @@ const MainPage = () => {
           <Title order={4} style={{ marginBottom: 16 }}>
             {'선택한 컬러'}
           </Title>
-          <Grid columns={16} style={{ maxWidth: 675, minHeight: 50 }}>
-            {selectedColorList.map((item, idx) => {
-              const { title, color } = item;
+          {selectedColorObjKeyList.map((item, idx) => {
+            const date = selectedColorObjKeyList[idx];
+            const colorObjList = selectedColorObj[date];
 
-              return (
-                <Tooltip key={`selected_color_${idx}`} label={title}>
-                  <Grid.Col
-                    span={1}
-                    style={{
-                      border: `1px solid ${colorScheme === 'dark' ? '#ffffff' : '#1d1d1f'}`,
-                      backgroundColor: color,
-                      height: 10,
-                      margin: 4,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      if (color.includes('#')) {
-                        if (color.length === 9) {
-                          changeFormat(COLOR_FORMAT.HEXA);
-                        } else {
-                          changeFormat(COLOR_FORMAT.HEX);
-                        }
+            return (
+              <div key={`date_selected_color_${idx}`}>
+                <Group>
+                  <Title order={5}>{date}</Title>
+                  {colorObjList.length > 0 ? (
+                    <Button onClick={() => handleClearColor(date)} variant={'outline'}>
+                      {CLEAR_COLOR}
+                    </Button>
+                  ) : null}
+                </Group>
+                <Divider my={8} />
+                <Grid columns={16} style={{ maxWidth: 675, minHeight: 50, margin: 0 }}>
+                  {colorObjList.map((colorItem, idx) => {
+                    const { title, color } = colorItem;
 
-                        changeColor(color);
+                    return (
+                      <Tooltip
+                        key={`selected_color_${idx}`}
+                        label={title ? `${title} / ${color}` : color}
+                        transitionProps={{ transition: 'skew-up', duration: 300 }}>
+                        <Grid.Col
+                          span={1}
+                          style={{
+                            border: `1px solid ${colorScheme === 'dark' ? '#ffffff' : '#1d1d1f'}`,
+                            backgroundColor: color,
+                            height: 10,
+                            margin: 4,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => {
+                            if (title !== '') {
+                              setNickInput(title);
+                            } else if (nickInput !== '') {
+                              setNickInput('');
+                            }
 
-                        return;
-                      }
+                            if (color.includes('#')) {
+                              if (color.length === 9) {
+                                changeFormat(COLOR_FORMAT.HEXA);
+                              } else {
+                                changeFormat(COLOR_FORMAT.HEX);
+                              }
 
-                      if (color.includes(COLOR_FORMAT.RGB)) {
-                        if (color.includes(COLOR_FORMAT.RGBA)) {
-                          changeFormat(COLOR_FORMAT.RGBA);
-                        } else {
-                          changeFormat(COLOR_FORMAT.RGB);
-                        }
+                              changeColor(color);
 
-                        changeColor(color);
+                              return;
+                            }
 
-                        return;
-                      }
+                            if (color.includes(COLOR_FORMAT.RGB)) {
+                              if (color.includes(COLOR_FORMAT.RGBA)) {
+                                changeFormat(COLOR_FORMAT.RGBA);
+                              } else {
+                                changeFormat(COLOR_FORMAT.RGB);
+                              }
 
-                      if (color.includes(COLOR_FORMAT.HSL)) {
-                        if (color.includes(COLOR_FORMAT.HSLA)) {
-                          changeFormat(COLOR_FORMAT.HSLA);
-                        } else {
-                          changeFormat(COLOR_FORMAT.HSL);
-                        }
+                              changeColor(color);
 
-                        changeColor(color);
+                              return;
+                            }
 
-                        return;
-                      }
-                    }}
-                  />
-                </Tooltip>
-              );
-            })}
-          </Grid>
-          {selectedColorList.length > 0 ? (
-            <Button onClick={handleClearColor} variant={'outline'} style={{ marginTop: 32 }}>
-              {CLEAR_COLOR}
-            </Button>
-          ) : null}
+                            if (color.includes(COLOR_FORMAT.HSL)) {
+                              if (color.includes(COLOR_FORMAT.HSLA)) {
+                                changeFormat(COLOR_FORMAT.HSLA);
+                              } else {
+                                changeFormat(COLOR_FORMAT.HSL);
+                              }
+
+                              changeColor(color);
+
+                              return;
+                            }
+                          }}
+                        />
+                      </Tooltip>
+                    );
+                  })}
+                </Grid>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
