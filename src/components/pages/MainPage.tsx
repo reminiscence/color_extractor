@@ -57,7 +57,9 @@ const MainPage = () => {
     setSelectedColorObj(filteredColorObj);
   };
 
-  const selectedColorObjKeyList = Object.keys(selectedColorObj).sort((a, b) => (a > b ? 0 : 1));
+  const selectedColorObjKeyList = Object.keys(selectedColorObj).sort(
+    (a, b) => dayjs(b).toDate().getTime() - dayjs(a).toDate().getTime(),
+  );
 
   return (
     <div
