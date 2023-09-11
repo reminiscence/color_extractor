@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Button,
   ColorInput,
@@ -33,7 +33,6 @@ const MainPage = () => {
   });
   const [nickInput, setNickInput] = useState<string>('');
   const matches = useMediaQuery('(max-width: 56rem)');
-  const testRef = useRef<HTMLDivElement>(null);
 
   const handleSelectColor = () => {
     const title = nickInput || '';
@@ -70,12 +69,7 @@ const MainPage = () => {
 
   const onMessageFromApp = (e: MessageEvent) => {
     e.stopPropagation();
-
-    if (testRef?.current != null) {
-      testRef.current.textContent = JSON.stringify(e.data);
-    } else {
-      alert(JSON.stringify(e.data));
-    }
+    console.log(e, e.data);
   };
 
   useEffect(() => {
@@ -98,17 +92,6 @@ const MainPage = () => {
       }}>
       <div>
         <button onClick={postMessageToApp}>{'webview post message test'}</button>
-        <div
-          ref={testRef}
-          style={{
-            width: '100%',
-            height: '500px',
-            backgroundColor: '#e0e0e0',
-            padding: 32,
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-          }}></div>
         <Group
           style={{
             alignItems: matches ? 'center' : 'flex-start',
