@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Button,
   ColorInput,
@@ -61,25 +61,6 @@ const MainPage = () => {
     (a, b) => dayjs(b).toDate().getTime() - dayjs(a).toDate().getTime(),
   );
 
-  const postMessageToApp = () => {
-    if (window?.ReactNativeWebView) {
-      window.ReactNativeWebView?.postMessage(JSON.stringify({ key: 'test web view' }));
-    }
-  };
-
-  const onMessageFromApp = (e: MessageEvent) => {
-    e.stopPropagation();
-    console.log(e, e.data);
-  };
-
-  useEffect(() => {
-    window.addEventListener('message', onMessageFromApp);
-
-    return () => {
-      window.removeEventListener('message', onMessageFromApp);
-    };
-  }, []);
-
   return (
     <div
       style={{
@@ -91,7 +72,6 @@ const MainPage = () => {
         justifyContent: 'center',
       }}>
       <div>
-        <button onClick={postMessageToApp}>{'webview post message test'}</button>
         <Group
           style={{
             alignItems: matches ? 'center' : 'flex-start',
